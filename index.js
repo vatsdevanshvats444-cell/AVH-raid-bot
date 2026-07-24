@@ -157,15 +157,28 @@ client.on("interactionCreate", async interaction => {
 
     if (sub === "end") {
 
-      participants.clear();
-      raidMessage = null;
+  for (const id of participants) {
 
-      await interaction.reply({
-        content: "🏁 Raid ended.",
-        ephemeral: true
-      });
+    try {
+      const user = await client.users.fetch(id);
 
-    }
+      await user.send(
+        "🏁 The AVH raid has ended!\n\nThanks for participating."
+      );
+
+    } catch {}
+
+  }
+
+  participants.clear();
+  raidMessage = null;
+
+  await interaction.reply({
+    content: "🏁 Raid ended! Everyone has been notified.",
+    ephemeral: true
+  });
+
+}
 
     if (sub === "cancel") {
 
