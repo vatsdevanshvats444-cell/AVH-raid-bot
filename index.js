@@ -61,12 +61,68 @@ client.once("ready", async () => {
   }
 });
 
+const {
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle
+} = require("discord.js");
+
 client.on("interactionCreate", async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "raid") {
-    await interaction.reply("🚧 Raid system is under construction.");
+  if (interaction.commandName !== "raid") return;
+
+  const sub = interaction.options.getSubcommand();
+
+  if (sub === "start") {
+    const server = interaction.options.getString("server");
+    const allies = interaction.options.getString("allies");
+    const enemies = interaction.options.getString("enemies");
+
+    const embed = new EmbedBuilder()
+      .setColor(0x8000ff)
+      .setTitle("⚔️ AVH RAID STARTED")
+      .addFields(
+        { name: "👑 Host", value: `${interaction.user}` },
+        { name: "🎮 Server", value: server },
+        { name: "🤝 Allies", value: allies, inline: true },
+        { name: "☠️ Enemies", value: enemies, inline: true },
+        { name: "👥 Participants", value: "0" }
+      )
+      .setFooter({ text: "Allied Vengeance Hunters" })
+      .setTimestamp();
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("join")
+        .setLabel("Join Raid")
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId("leave")
+        .setLabel("Leave Raid")
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    const raidChannel = client.channels.cache.get("1525784189557932073");
+
+    await raidChannel.send({
+      embeds: [embed],
+      components: [row]
+    });
+
+    await interaction.reply({
+      content: "✅ Raid started!",
+      ephemeral: true
+    });
+  }
+
+  if (sub === "end") {
+    await interaction.reply("⚔️ Raid ended.");
+  }
+
+  if (sub === "cancel") {
+    await interaction.reply("❌ Raid cancelled.");
   }
 });
-
-client.login(process.env.TOKEN);
