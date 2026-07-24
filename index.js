@@ -115,9 +115,27 @@ activeRaid = await raidChannel.send({
     });
   }
 
-  if (sub === "end") {
-    await interaction.reply("🏁 Raid ended.");
+if (sub === "end") {
+
+  for (const id of participants) {
+
+    try {
+      const user = await client.users.fetch(id);
+
+      await user.send(
+        "🏁 The AVH raid has ended!\n\nThanks for participating."
+      );
+
+    } catch {}
   }
+
+  const total = participants.size;
+
+  participants.clear();
+  activeRaid = null;
+
+  await interaction.reply(`🏁 Raid ended!\nParticipants: ${total}`);
+}
 
   if (sub === "cancel") {
     await interaction.reply("❌ Raid cancelled.");
