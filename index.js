@@ -104,10 +104,10 @@ client.on("interactionCreate", async interaction => {
 
     const raidChannel = await client.channels.fetch("1525784189557932073");
 
-    await raidChannel.send({
-      embeds: [embed],
-      components: [row]
-    });
+activeRaid = await raidChannel.send({
+  embeds: [embed],
+  components: [row]
+});
 
     await interaction.reply({
       content: "✅ Raid started!",
