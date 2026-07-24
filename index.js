@@ -6,6 +6,7 @@ const {
   REST,
   Routes,
   SlashCommandBuilder,
+  PermissionFlagsBits,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -16,14 +17,20 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.GuildMessages
   ]
 });
 
-let participants = new Set();
-let activeRaid = null;
+// ====== CONFIG ======
+const APPLICATION_ID = "1530143717153837096";
+const GUILD_ID = "1525492375508750529";
+const RAID_CHANNEL_ID = "1525784189557932073";
 
+// ====== MEMORY ======
+let raidMessage = null;
+let participants = new Set();
+
+// ====== SLASH COMMAND ======
 const commands = [
   new SlashCommandBuilder()
     .setName("raid")
@@ -32,113 +39,178 @@ const commands = [
       sub
         .setName("start")
         .setDescription("Start a raid")
-        .addStringOption(o =>
-          o.setName("server").setDescription("Roblox Server Link").setRequired(true))
-        .addStringOption(o =>
-          o.setName("allies").setDescription("Allies").setRequired(true))
-        .addStringOption(o =>
-          o.setName("enemies").setDescription("Enemies").setRequired(true)))
+        .addStringOption(opt =>
+          opt
+            .setName("server")
+            .setDescription("Roblox private server link")
+            .setRequired(true))
+        .addStringOption(opt =>
+          opt
+            .setName("allies")
+            .setDescription("Allied clans")
+            .setRequired(true))
+        .addStringOption(opt =>
+          opt
+            .setName("enemies")
+            .setDescription("Enemy clans")
+            .setRequired(true)))
     .addSubcommand(sub =>
       sub.setName("end").setDescription("End the raid"))
     .addSubcommand(sub =>
       sub.setName("cancel").setDescription("Cancel the raid"))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 ].map(c => c.toJSON());
 
+// ===== READY =====
 client.once("ready", async () => {
-  console.log(`✅ ${client.user.tag} is online!`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
 
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(
-        "1530143717153837096",
-        "1525492375508750529"
-      ),
-      { body: commands }
-    );
+  await rest.put(
+    Routes.applicationGuildCommands(
+      APPLICATION_ID,
+      GUILD_ID
+    ),
+    { body: commands }
+  );
 
-    console.log("✅ Slash commands registered.");
-  } catch (err) {
-    console.error(err);
-  }
+  console.log("✅ Slash commands registered");
 });
 
+// ===== INTERACTIONS =====
 client.on("interactionCreate", async interaction => {
 
-  if (!interaction.isChatInputCommand()) return;
+  // Slash Commands
+  if (interaction.isChatInputCommand()) {
 
-  if (interaction.commandName !== "raid") return;
+    if (interaction.commandName !== "raid") return;
 
-  const sub = interaction.options.getSubcommand();
+    const sub = interaction.options.getSubcommand();
 
-  if (sub === "start") {
+    if (sub === "start") {
 
-    const server = interaction.options.getString("server");
-    const allies = interaction.options.getString("allies");
-    const enemies = interaction.options.getString("enemies");
+      participants.clear();
 
-    const embed = new EmbedBuilder()
-      .setColor(0x8000ff)
-      .setTitle("⚔️ AVH RAID STARTED")
-      .addFields(
-        { name: "👑 Host", value: `${interaction.user}` },
-        { name: "🎮 Server", value: server },
-        { name: "🤝 Allies", value: allies, inline: true },
-        { name: "☠️ Enemies", value: enemies, inline: true },
-        { name: "👥 Participants", value: "0" }
-      )
-      .setTimestamp();
+      const server = interaction.options.getString("server");
+      const allies = interaction.options.getString("allies");
+      const enemies = interaction.options.getString("enemies");
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("join")
-        .setLabel("Join Raid")
-        .setStyle(ButtonStyle.Success),
+      const embed = new EmbedBuilder()
+        .setColor("Purple")
+        .setTitle("⚔️ AVH RAID STARTED")
+        .addFields(
+          {
+            name: "👑 Host",
+            value: `${interaction.user}`
+          },
+          {
+            name: "🎮 Server",
+            value: server
+          },
+          {
+            name: "🤝 Allies",
+            value: allies,
+            inline: true
+          },
+          {
+            name: "☠️ Enemies",
+            value: enemies,
+            inline: true
+          },
+          {
+            name: "👥 Participants",
+            value: "0"
+          }
+        )
+        .setTimestamp();
 
-      new ButtonBuilder()
-        .setCustomId("leave")
-        .setLabel("Leave Raid")
-        .setStyle(ButtonStyle.Danger)
-    );
+      const buttons = new ActionRowBuilder().addComponents(
 
-    const raidChannel = await client.channels.fetch("1525784189557932073");
+        new ButtonBuilder()
+          .setCustomId("join")
+          .setLabel("Join Raid")
+          .setEmoji("✅")
+          .setStyle(ButtonStyle.Success),
 
-activeRaid = await raidChannel.send({
-  embeds: [embed],
-  components: [row]
-});
+        new ButtonBuilder()
+          .setCustomId("leave")
+          .setLabel("Leave Raid")
+          .setEmoji("❌")
+          .setStyle(ButtonStyle.Danger)
 
-    await interaction.reply({
-      content: "✅ Raid started!",
-      ephemeral: true
-    });
-  }
-
-if (sub === "end") {
-
-  for (const id of participants) {
-
-    try {
-      const user = await client.users.fetch(id);
-
-      await user.send(
-        "🏁 The AVH raid has ended!\n\nThanks for participating."
       );
 
-    } catch {}
+      const channel = await client.channels.fetch(RAID_CHANNEL_ID);
+
+      raidMessage = await channel.send({
+        embeds: [embed],
+        components: [buttons]
+      });
+
+      await interaction.reply({
+        content: "✅ Raid started!",
+        ephemeral: true
+      });
+
+    }
+
+    if (sub === "end") {
+
+      participants.clear();
+      raidMessage = null;
+
+      await interaction.reply({
+        content: "🏁 Raid ended.",
+        ephemeral: true
+      });
+
+    }
+
+    if (sub === "cancel") {
+
+      participants.clear();
+
+      if (raidMessage) {
+        await raidMessage.delete().catch(() => {});
+      }
+
+      raidMessage = null;
+
+      await interaction.reply({
+        content: "❌ Raid cancelled.",
+        ephemeral: true
+      });
+
+    }
+
   }
 
-  const total = participants.size;
+  // Buttons
+  if (interaction.isButton()) {
 
-  participants.clear();
-  activeRaid = null;
+    if (interaction.customId === "join") {
 
-  await interaction.reply(`🏁 Raid ended!\nParticipants: ${total}`);
-}
+      participants.add(interaction.user.id);
 
-  if (sub === "cancel") {
-    await interaction.reply("❌ Raid cancelled.");
+      return interaction.reply({
+        content: `✅ Joined! Total participants: ${participants.size}`,
+        ephemeral: true
+      });
+
+    }
+
+    if (interaction.customId === "leave") {
+
+      participants.delete(interaction.user.id);
+
+      return interaction.reply({
+        content: `❌ Left! Total participants: ${participants.size}`,
+        ephemeral: true
+      });
+
+    }
+
   }
 
 });
