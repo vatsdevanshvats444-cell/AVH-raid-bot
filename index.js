@@ -21,6 +21,9 @@ const client = new Client({
   ]
 });
 
+let participants = new Set();
+let activeRaid = null;
+
 const commands = [
   new SlashCommandBuilder()
     .setName("raid")
