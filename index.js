@@ -6,12 +6,12 @@ const {
   REST,
   Routes,
   SlashCommandBuilder,
-  Collection,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle
 } = require("discord.js");
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -21,8 +21,6 @@ const client = new Client({
   ]
 });
 
-client.commands = new Collection();
-
 const commands = [
   new SlashCommandBuilder()
     .setName("raid")
@@ -31,13 +29,12 @@ const commands = [
       sub
         .setName("start")
         .setDescription("Start a raid")
-        .addStringOption(option =>
-          option.setName("server").setDescription("Roblox server link").setRequired(true))
-        .addStringOption(option =>
-          option.setName("allies").setDescription("Allies").setRequired(true))
-        .addStringOption(option =>
-          option.setName("enemies").setDescription("Enemies").setRequired(true))
-    )
+        .addStringOption(o =>
+          o.setName("server").setDescription("Roblox Server Link").setRequired(true))
+        .addStringOption(o =>
+          o.setName("allies").setDescription("Allies").setRequired(true))
+        .addStringOption(o =>
+          o.setName("enemies").setDescription("Enemies").setRequired(true)))
     .addSubcommand(sub =>
       sub.setName("end").setDescription("End the raid"))
     .addSubcommand(sub =>
@@ -64,14 +61,8 @@ client.once("ready", async () => {
   }
 });
 
-const {
-  EmbedBuilder,
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle
-} = require("discord.js");
-
 client.on("interactionCreate", async interaction => {
+
   if (!interaction.isChatInputCommand()) return;
 
   if (interaction.commandName !== "raid") return;
@@ -79,6 +70,7 @@ client.on("interactionCreate", async interaction => {
   const sub = interaction.options.getSubcommand();
 
   if (sub === "start") {
+
     const server = interaction.options.getString("server");
     const allies = interaction.options.getString("allies");
     const enemies = interaction.options.getString("enemies");
@@ -93,7 +85,6 @@ client.on("interactionCreate", async interaction => {
         { name: "☠️ Enemies", value: enemies, inline: true },
         { name: "👥 Participants", value: "0" }
       )
-      .setFooter({ text: "Allied Vengeance Hunters" })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -108,7 +99,7 @@ client.on("interactionCreate", async interaction => {
         .setStyle(ButtonStyle.Danger)
     );
 
-    const raidChannel = client.channels.cache.get("1525784189557932073");
+    const raidChannel = await client.channels.fetch("1525784189557932073");
 
     await raidChannel.send({
       embeds: [embed],
@@ -122,10 +113,13 @@ client.on("interactionCreate", async interaction => {
   }
 
   if (sub === "end") {
-    await interaction.reply("⚔️ Raid ended.");
+    await interaction.reply("🏁 Raid ended.");
   }
 
   if (sub === "cancel") {
     await interaction.reply("❌ Raid cancelled.");
   }
+
 });
+
+client.login(process.env.TOKEN);
