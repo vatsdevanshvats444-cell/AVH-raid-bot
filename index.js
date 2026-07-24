@@ -221,14 +221,20 @@ client.on("interactionCreate", async interaction => {
 
     if (interaction.customId === "leave") {
 
-      participants.delete(interaction.user.id);
+  participants.delete(interaction.user.id);
 
-      return interaction.reply({
-        content: `❌ Left! Total participants: ${participants.size}`,
-        ephemeral: true
-      });
+  try {
+    await interaction.user.send(
+      "❌ You left the AVH raid."
+    );
+  } catch {}
 
-    }
+  return interaction.reply({
+    content: `❌ Left! Total participants: ${participants.size}`,
+    ephemeral: true
+  });
+
+}
 
   }
 
