@@ -204,14 +204,20 @@ client.on("interactionCreate", async interaction => {
 
     if (interaction.customId === "join") {
 
-      participants.add(interaction.user.id);
+  participants.add(interaction.user.id);
 
-      return interaction.reply({
-        content: `✅ Joined! Total participants: ${participants.size}`,
-        ephemeral: true
-      });
+  try {
+    await interaction.user.send(
+      "✅ You joined the AVH raid!\n\nYou'll receive another DM when the raid ends."
+    );
+  } catch {}
 
-    }
+  return interaction.reply({
+    content: `✅ Joined! Total participants: ${participants.size}`,
+    ephemeral: true
+  });
+
+}
 
     if (interaction.customId === "leave") {
 
